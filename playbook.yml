@@ -1,0 +1,59 @@
+---
+- hosts: digital_oceans
+  vars:
+    d_user: satokazuma
+    swapfile_name: swapfile
+    set_vncpass_script: set_vnc_passwd.sh
+    start_vnc_server_script: startvnc.sh
+  remote_user: root
+  tasks:
+    - name: install  xfce4
+      apt: name=xfce4 update_cache=yes
+    - name: install rsync
+      apt: name=rsync
+    - name: install tightvncserver
+      apt: name=tightvncserver
+    - name: install chromium
+      apt: name=chromium
+    - name: add new user whose name is satokazuma
+      user: name=satokazuma shell=/bin/bash
+    - name: copy root's authorized_keys into d_user's home directory
+      shell: cp -r /root/.ssh  /home/{{d_user}}
+    - name: change owner of .ssh
+      shell: chown -R {{d_user}}:{{d_user}} /home/{{d_user}}/.ssh
+    - name: prepear for swap file
+      shell: dd if=/dev/zero of=/{{swapfile_name}} bs=1024 count=4000000
+    - name: mkswap
+      shell: mkswap /{{swapfile_name}}
+    - name: swapon
+      shell: swapon /{{swapfile_name}}
+    - name: add genfstab
+      shell: echo /{{swapfile_name}} none swap sw 0 0 >> /etc/fstab
+    - name: install expect
+      apt: name=expect
+    - name: send vnc password set script.sh
+      remote_user: "{{d_user}}"
+      copy: src={{set_vncpass_script}} dest=/home/{{d_user}} mode="u+x"
+    - name: set vncpassword
+      remote_user: "{{d_user}}"
+      shell: ./{{set_vncpass_script}}
+    - name: kill vncserver process
+      remote_user: "{{d_user}}"
+      shell: vncserver -kill :1
+    - name: make  xfce4 work on vnc connection
+      remote_user: "{{d_user}}"
+      shell: echo exec startxfce4 >> .vnc/xstartup
+    - name: chmod 700 .vnc
+      remote_user: "{{d_user}}"
+      shell: chmod 700 ./.vnc
+    - name: put startup vncserver script
+      remote_user: "{{d_user}}"
+      copy: src={{start_vnc_server_script}} dest=./ mode="u+x"
+    - name: make vncserver start up script executable
+      remote_user: "{{d_user}}"
+      shell: ./startvnc.sh >> vnc_log.txt
+    - name:  kill vncserver
+      remote_user: "{{d_user}}"
+      shell: vncserver -kill :1
+    - name: reboot
+      shell: sleep 2s && /sbin/reboot &
