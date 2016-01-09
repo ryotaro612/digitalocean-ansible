@@ -1,6 +1,7 @@
 #!/bin/sh
 
-password="fugafuga"
+## the password required when you login the droplet through vncserver
+password="foobarbaz"
 
 expect <<EOF
 spawn vncserver

@@ -15,8 +15,8 @@
       apt: name=tightvncserver
     - name: install chromium
       apt: name=chromium
-    - name: add new user whose name is satokazuma
-      user: name=satokazuma shell=/bin/bash
+    - name: add new user
+      user: name={{d_user}} shell=/bin/bash
     - name: copy root's authorized_keys into d_user's home directory
       shell: cp -r /root/.ssh  /home/{{d_user}}
     - name: change owner of .ssh
